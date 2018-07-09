@@ -18,7 +18,8 @@ logger = wrap_logger(logging.getLogger(__name__))
 def register():
     cryptographer = Cryptographer()
     form = EnrolmentCodeForm(request.form)
-    form.enrolment_code.data = form.enrolment_code.data.strip()
+    if form.enrolment_code.data:
+        form.enrolment_code.data = form.enrolment_code.data.strip()
 
     if request.method == 'POST' and form.validate():
         logger.info('Enrolment code submitted')
