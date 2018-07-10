@@ -22,8 +22,8 @@ def get_register():
 def register():
     cryptographer = Cryptographer()
     form = EnrolmentCodeForm(request.form)
-    form.enrolment_code.data = form.enrolment_code.data.strip()
-    enrolment_code = request.form.get('enrolment_code', '').lower()
+    form.enrolment_code.data = form.enrolment_code.data.strip().lower()
+    enrolment_code = form.enrolment_code.data
     iac = iac_controller.get_iac_from_enrolment(enrolment_code)
     form.iac = iac
 
