@@ -20,13 +20,13 @@ class EnrolmentCodeForm(FlaskForm):
                                                                             max=12,
                                                                             message='Please re-enter '
                                                                                     'the code and try again')])
+    HiddenField('iac')
 
     @staticmethod
     def validate_enrolment_code(form, field):
         validation_message = 'Please re-enter the code and try again'
-        enrolment_code = field.data.lower()
         try:
-            iac = iac_controller.get_iac_from_enrolment(enrolment_code)
+            iac = form.iac
             if iac is None:
                 logger.info('Enrolment code not found')
                 raise ValidationError(validation_message)

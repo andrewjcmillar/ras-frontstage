@@ -25,6 +25,7 @@ def register():
     form.enrolment_code.data = form.enrolment_code.data.strip()
     enrolment_code = request.form.get('enrolment_code', '').lower()
     iac = iac_controller.get_iac_from_enrolment(enrolment_code)
+    form.iac = iac
 
     if request.method == 'POST' and form.validate():
         logger.info('Enrolment code submitted')
