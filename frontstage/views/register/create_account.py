@@ -6,7 +6,6 @@ from structlog import wrap_logger
 
 from frontstage.common.cryptographer import Cryptographer
 from frontstage.controllers import case_controller, iac_controller
-from frontstage.exceptions.exceptions import ApiError
 from frontstage.models import EnrolmentCodeForm
 from frontstage.views.register import register_bp
 
@@ -14,36 +13,21 @@ from frontstage.views.register import register_bp
 logger = wrap_logger(logging.getLogger(__name__))
 
 
-@register_bp.route('/create-account', methods=['GET', 'POST'])
+@register_bp.route('/create-account', methods=['GET'])
+def get_register():
+    return render_template('register/register.enter-enrolment-code.html', form=EnrolmentCodeForm(request.form))
+
+
+@register_bp.route('/create-account', methods=['POST'])
 def register():
     cryptographer = Cryptographer()
     form = EnrolmentCodeForm(request.form)
-    if form.enrolment_code.data:
-        form.enrolment_code.data = form.enrolment_code.data.strip()
+    form.enrolment_code.data = form.enrolment_code.data.strip()
+    enrolment_code = request.form.get('enrolment_code', '').lower()
+    iac = iac_controller.get_iac_from_enrolment(enrolment_code)
 
     if request.method == 'POST' and form.validate():
         logger.info('Enrolment code submitted')
-        enrolment_code = request.form.get('enrolment_code', '').lower()
-
-        # Validate the enrolment code
-        try:
-            iac = iac_controller.get_iac_from_enrolment(enrolment_code)
-            if iac is None:
-                logger.info('Enrolment code not found')
-                template_data = {"error": {"type": "failed"}}
-                return render_template('register/register.enter-enrolment-code.html', form=form, data=template_data), 202
-            if not iac['active']:
-                logger.info('Enrolment code not active')
-                template_data = {"error": {"type": "failed"}}
-                return render_template('register/register.enter-enrolment-code.html', form=form, data=template_data), 200
-        except ApiError as exc:
-            if exc.status_code == 400:
-                logger.info('Enrolment code already used')
-                template_data = {"error": {"type": "failed"}}
-                return render_template('register/register.enter-enrolment-code.html', form=form, data=template_data), 200
-            else:
-                logger.error('Failed to submit enrolment code')
-                raise exc
 
         # This is the initial submission of enrolment code so post a case event for authentication attempt
         case_id = iac['caseId']
@@ -61,4 +45,4 @@ def register():
                                 _external=True,
                                 _scheme=os.getenv('SCHEME', 'http')))
 
-    return render_template('register/register.enter-enrolment-code.html', form=form, data={"error": {}})
+    return render_template('register/register.enter-enrolment-code.html', form=form)

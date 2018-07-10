@@ -9,6 +9,8 @@ from wtforms import HiddenField, PasswordField, StringField, SubmitField, TextAr
 from wtforms.validators import InputRequired, EqualTo, Length, DataRequired, Email, ValidationError
 
 from frontstage import app
+from frontstage.controllers import iac_controller
+from frontstage.exceptions.exceptions import ApiError
 
 logger = wrap_logger(logging.getLogger(__name__))
 
@@ -18,6 +20,26 @@ class EnrolmentCodeForm(FlaskForm):
                                                                             max=12,
                                                                             message='Please re-enter '
                                                                                     'the code and try again')])
+
+    @staticmethod
+    def validate_enrolment_code(form, field):
+        validation_message = 'Please re-enter the code and try again'
+        enrolment_code = field.data.lower()
+        try:
+            iac = iac_controller.get_iac_from_enrolment(enrolment_code)
+            if iac is None:
+                logger.info('Enrolment code not found')
+                raise ValidationError(validation_message)
+            if not iac['active']:
+                logger.info('Enrolment code not active')
+                raise ValidationError(validation_message)
+        except ApiError as exc:
+            if exc.status_code == 400:
+                logger.info('Enrolment code already used')
+                raise ValidationError(validation_message)
+            else:
+                logger.error('Failed to submit enrolment code')
+                raise exc
 
 
 class RegistrationForm(FlaskForm):
